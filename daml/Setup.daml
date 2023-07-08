@@ -1,0 +1,20 @@
+module Setup where
+
+import Daml.Script
+
+-- setup : Script ServiceId
+setup = script do
+-- user_setup_begin
+
+  abcBank <- allocatePartyWithHint "ABCBank" (PartyIdHint "ABCBank")
+  alice <- allocatePartyWithHint "Alice" (PartyIdHint "Alice")
+
+  abcBankId <- validateUserId "abcBank"
+  aliceId <- validateUserId "alice"
+  
+
+  createUser (User abcBankId (Some abcBank)) [CanActAs abcBank]
+  createUser (User aliceId (Some alice)) [CanActAs alice]
+  
+-- user_setup_end
+  pure ()

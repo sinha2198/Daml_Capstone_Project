@@ -1,0 +1,102 @@
+module TestBankingService where
+
+
+import Daml.Script
+import DA.Date
+import BankService
+import AccountBalance
+import BankAccount
+
+
+
+
+setup = script do
+
+  abcBank <- allocatePartyWithHint "ABCBank" (PartyIdHint "ABCBank")
+  alice <- allocatePartyWithHint "Alice" (PartyIdHint "Alice")
+
+  abcBankId <- validateUserId "abcBank"
+  aliceId <- validateUserId "alice"
+  
+
+  createUser (User abcBankId (Some abcBank)) [CanActAs abcBank]
+  createUser (User aliceId (Some alice)) [CanActAs alice]
+--Unhappy Path testing BEGINS
+--  Negative test case 1- alice cannot raise a request with negative value in amount field
+
+  submitMustFail alice do
+    createCmd CreateBankAccountRequest with
+      bank = abcBank
+      customer = alice 
+      application_date = date 2023 Feb 12
+      type_of_account = "savings"
+      amount = Cash with
+        account_balance = -500.0
+        currency = "INR"
+      remarks = "I want to open savings account"
+
+--Negative test case 2- alice cannot raise a request with 0 in amount field
+
+  submitMustFail alice do
+    createCmd CreateBankAccountRequest with
+      bank = abcBank
+      customer = alice 
+      application_date = date 2023 Feb 12
+      type_of_account = "savings"
+      amount = Cash with
+        account_balance = 0.00
+        currency = "INR"
+      remarks = "I want to open savings account"
+
+-- Negative test case 3 -  alice cannot raise a request with invalid currencies
+  submitMustFail alice do
+    createCmd CreateBankAccountRequest with
+      bank = abcBank
+      customer = alice 
+      application_date = date 2023 Feb 12
+      type_of_account = "savings"
+      amount = Cash with
+        account_balance = 100.00
+        currency = "Indian Rupee"
+      remarks = "I want to open savings account"
+--Unhappy Path testing ENDS
+
+--Happ Path Testing BEGINS
+  saving_account_req <- submit alice do
+    createCmd CreateBankAccountRequest with
+      bank = abcBank
+      customer = alice 
+      application_date = date 2023 Feb 12
+      type_of_account = "savings"
+      amount = Cash with
+        account_balance = 500.0
+        currency = "INR"
+      remarks = "I want to open savings account"
+
+
+
+  loan_account_req <- submit alice do
+    createCmd CreateBankAccountRequest with
+      bank = abcBank
+      customer = alice 
+      application_date = date 2023 Feb 12
+      type_of_account = "loan"
+      amount = Cash with
+        account_balance = 1000.00
+        currency = "INR"
+      remarks = "I want to open loan account"
+
+
+  create_saving_account <- submit abcBank do
+    exerciseCmd saving_account_req ApproveRequest 
+
+  loan <- submit abcBank do
+    exerciseCmd loan_account_req ApproveRequest
+
+  submit alice do
+    exerciseCmd create_saving_account Deposite with deposite_amount = 50.0
+
+--Happy Path testing ENDS
+
+
+

@@ -1,0 +1,6 @@
+module AccountBalance where
+
+data Cash = Cash with
+  currency : Text
+  account_balance : Decimal
+    deriving (Eq, Show)

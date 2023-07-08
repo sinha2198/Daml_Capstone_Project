@@ -1,0 +1,11 @@
+module Functions where
+
+incrementMe: Int -> Int 
+incrementMe x = x+1
+
+
+getStartingSequence: Text -> Int
+getStartingSequence sequence = do
+    if (sequence == "savings ") then incrementMe(100) 
+    else if (sequence == "loan") then incrementMe(200)
+    else incrementMe(300)

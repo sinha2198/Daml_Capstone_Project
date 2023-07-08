@@ -1,0 +1,53 @@
+module BankService where
+
+import BankAccount
+import DA.Date
+import AccountBalance
+import DA.Text as T
+import Functions
+
+
+type  CreateBankAccountRequestId = ContractId CreateBankAccountRequest
+data Nature_Of_Account = Loan | Savings
+  deriving (Eq, Show, Enum)
+
+template CreateBankAccountRequest 
+    with
+        bank: Party         
+        customer: Party
+        application_date: Date 
+        type_of_account: Text
+        amount: Cash
+        remarks: Text
+    where
+        signatory customer
+        observer bank
+        ensure amount.account_balance > 0.00      
+            && T.length amount.currency == 3
+            && T.isUpper amount.currency
+        nonconsuming choice ApplyAccountOpening : CreateBankAccountRequestId
+            with
+            initial_amount : Decimal
+            account_type: Text
+                controller customer
+            do create this with                          
+                amount.account_balance = initial_amount
+                type_of_account = account_type
+
+
+        choice ApproveRequest :  BankAccountId
+                controller bank
+            do 
+            now <- getTime
+            create BankAccount with
+                customer
+                bank
+                type_of_account
+                balance = amount
+                transaction_date = toDateUTC now
+                account_number = Functions.getStartingSequence(type_of_account)
+
+
+
+
+           

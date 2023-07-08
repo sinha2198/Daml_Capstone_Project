@@ -1,0 +1,49 @@
+module BankAccount where
+import AccountBalance
+
+import DA.Text as T
+
+type BankAccountId = ContractId BankAccount
+
+data AccountKey = AccountKey with
+  customer : Party
+  account_number : Int
+    deriving (Eq, Show)
+
+template BankAccount
+    with
+        bank : Party
+        customer : Party
+        type_of_account: Text
+        balance: Cash
+        transaction_date: Date
+        account_number: Int
+    where 
+      signatory bank, customer
+      key AccountKey with
+          account_number
+          customer
+        : AccountKey
+      maintainer key.customer
+      ensure balance.account_balance > 0.00      
+        && T.length balance.currency == 3
+        && T.isUpper balance.currency
+
+
+      choice Deposite:
+           BankAccountId
+        with
+        deposite_amount : Decimal
+            controller customer 
+        do  
+            assertMsg "amount to be added cannot be 0 or less " $ deposite_amount > 0.0
+            create this with  balance.account_balance = balance.account_balance + deposite_amount
+      choice Withdraw:
+           BankAccountId
+        with
+        withdrawal_amount : Decimal
+            controller customer 
+        do  
+            assertMsg "amount to be withdrawn should be less that current balance" $ withdrawal_amount < balance.account_balance
+            create this with  balance.account_balance = balance.account_balance - withdrawal_amount
+
